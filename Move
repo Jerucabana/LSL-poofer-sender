@@ -1,0 +1,224 @@
+key owner;
+list avs = [];
+string textura;
+string nome;
+key dest;
+
+DetectAgent (string text)
+{
+    ava = llGetSubString(text, 3,60);
+    llSensor("",NULL_KEY,AGENT,90,3*PI);
+}
+
+MakeParticles(string car, key av)                
+{
+    float st = 1.0;                
+    llParticleSystem([
+PSYS_PART_FLAGS, PSYS_PART_EMISSIVE_MASK | PSYS_PART_TARGET_POS_MASK
+
+,PSYS_SRC_TEXTURE, car
+
+,PSYS_SRC_MAX_AGE, 0.0
+
+,PSYS_PART_MAX_AGE, 5.0
+
+,PSYS_SRC_BURST_RATE,0.40
+ 
+,PSYS_SRC_BURST_PART_COUNT, 5
+ 
+,PSYS_SRC_BURST_RADIUS, 0.2
+
+,PSYS_SRC_BURST_SPEED_MIN, 1.0
+
+,PSYS_SRC_BURST_SPEED_MAX, 2.0
+
+,PSYS_SRC_ACCEL, <0.0,0.0,0.5>
+
+,PSYS_SRC_TARGET_KEY, av
+
+,PSYS_PART_START_COLOR, <1.0,1.0,1.0>
+
+,PSYS_PART_END_COLOR, <1.0,1.0,1.0>
+     
+,PSYS_PART_START_ALPHA,      st                
+,PSYS_PART_END_ALPHA,        st                
+,PSYS_PART_START_SCALE,<0.4,0.6,1.0>      
+,PSYS_PART_END_SCALE,  <0.4,0.6,1.0> 
+    
+,PSYS_SRC_ANGLE_BEGIN, 3*PI                 
+,PSYS_SRC_ANGLE_END, PI/2                 
+,PSYS_SRC_OMEGA, <0.0,0.0,0.0>
+,PSYS_SRC_PATTERN,PSYS_SRC_PATTERN_EXPLODE
+
+
+]);
+}
+
+string ava;
+string car;
+list near;
+integer gMenuPosition = 0;
+list InventoryList;
+integer chan;
+
+Menu(integer Channel, list lista)
+{
+    integer Last;
+    list Buttons;
+    list gNames = InventoryList;
+    integer All = llGetListLength(lista);
+    if(gMenuPosition >= 9)   //This is NOT the first menu page
+    {
+        Buttons += "    <----";
+        if((All - gMenuPosition) > 11)  // This is not the last page
+        {
+            Buttons += "    ---->";
+        }
+        else    // This IS the last page
+        {
+            Last = TRUE;
+        }            
+    }    
+    else if (All > gMenuPosition+9) // This IS the first page
+    {
+        if((All - gMenuPosition) > 11)  // There are more pages to follow
+        {
+            Buttons += "    ---->";
+        }
+        else    // This IS the last page
+        {
+            Last = TRUE;
+        }            
+    }
+    else    // This is the only menu page
+    {
+        Last = TRUE;
+    }
+    if (All > 0)
+    {
+        integer b;
+        integer len = llGetListLength(Buttons);
+        // This bizarre test does the important work ......        
+        for(b = gMenuPosition + len + Last - 1 ; (len < 12)&&(b < All); ++b)
+        {
+            Buttons = Buttons + [llList2String(lista,b)];
+            len = llGetListLength(Buttons);
+        }
+    }
+    // gLsn = llListen(-12345,"","","");    
+    // llSetTimerEvent(10.0);
+    llDialog(llGetOwner()," \n",Buttons, Channel);
+}
+
+
+default
+{   
+
+    changed(integer change)
+    {
+        if (change & CHANGED_OWNER)
+            llResetScript();
+    }
+    
+    link_message(integer sender_num, integer num, string tex, key id)
+    {
+        // llSay(0, "Owner: "+owner);
+        gMenuPosition = 0;
+        avs = [];
+        InventoryList = [];
+        chan = 0;
+        if (num == 2 && id == owner)
+        {
+            chan = 8;
+            owner = llGetOwner();
+            integer count = llGetInventoryNumber(INVENTORY_TEXTURE);
+            string  ItemName;
+            while (count--)
+            {
+                ItemName = llGetInventoryName(INVENTORY_TEXTURE, count); 
+                InventoryList += ItemName;
+            }
+            avs = [];
+            llSensor("", NULL_KEY, AGENT_BY_LEGACY_NAME, 15.0, PI);
+            //llDialog (owner, "Choose your texture", InventoryList, 8);
+            Menu(chan, InventoryList);
+            //MakeParticles(car,tex); 
+        }
+    }
+    
+     state_entry()
+     {
+        owner = llGetOwner();
+        llListen(8, "", llGetOwner(), "");
+        llListen(9, "", llGetOwner(), "");
+        llListen(10, "", llGetOwner(), "");
+        llSetTimerEvent(30); 
+    }
+
+    timer()
+    {
+        llParticleSystem([]);
+    }
+
+    sensor(integer total)
+    {
+        avs = [];
+        integer index = 0;
+        while (index < total)
+        avs += llDetectedName(index++);
+    }
+    
+    listen(integer channel, string name, key id, string message)
+    {
+        if (id == owner)
+        {
+            if(channel==8)
+            {
+                if (id == owner)
+                {
+                    if (~llSubStringIndex(message,"---->"))
+                    {
+                        gMenuPosition += 10;
+                        Menu(chan, InventoryList);
+                    }
+                    else if (~llSubStringIndex(message,"<----"))
+                    {
+                        gMenuPosition -= 10;
+                        Menu(chan, InventoryList);
+                    }
+                    else
+                    {
+                        textura = message;
+                        //llDialog (owner, "Choose the Destination", avs, 9);
+                        gMenuPosition = 0;
+                        chan = 9;
+                        Menu(chan, avs);
+                    }
+                }
+            }
+            if(channel==9)
+            {                
+                if (id==owner)
+                {
+                    if (~llSubStringIndex(message,"---->"))
+                    {
+                        gMenuPosition += 10;
+                        Menu(chan, avs);
+                    }
+                    else if (~llSubStringIndex(message,"<----"))
+                    {
+                        gMenuPosition -= 10;
+                        Menu(chan, avs);
+                    }
+                    else
+                    {
+                        gMenuPosition = 0;
+                        nome = message;
+                        dest = llName2Key(nome);
+                        MakeParticles(textura, dest);
+                    }
+                } 
+            }
+        }
+    }
+}
