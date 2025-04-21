@@ -1,0 +1,30 @@
+key user;
+
+default
+{
+    attach(key id)
+    {
+        if (id) 
+        {
+            user = id;
+        }
+    }
+    
+    changed(integer change)
+    {
+        if (change & CHANGED_OWNER)
+            llResetScript();
+    }
+    
+    touch_end(integer num_detected)
+    {
+        // llSay(0,"user: "+user);  
+        if (llDetectedKey(0) == user)
+        {
+            llSay (6, user+"poof");
+        }else
+        {
+            llSay(0, "Detach and attach again the HUD to reconfig");
+        }
+    }
+}
