@@ -1,0 +1,177 @@
+key owner;
+
+MakeParticles(string tx)                
+{
+    float st = 1.0;                
+    llParticleSystem([
+PSYS_PART_FLAGS, PSYS_PART_EMISSIVE_MASK | PSYS_PART_BOUNCE_MASK
+
+,PSYS_SRC_TEXTURE, tx
+
+,PSYS_SRC_MAX_AGE, 0.0
+
+,PSYS_PART_MAX_AGE, 5.0
+
+,PSYS_SRC_BURST_RATE,0.40
+ 
+,PSYS_SRC_BURST_PART_COUNT, 5
+ 
+,PSYS_SRC_BURST_RADIUS, 0.2
+
+,PSYS_SRC_BURST_SPEED_MIN, 1.0
+
+,PSYS_SRC_BURST_SPEED_MAX, 2.0
+
+,PSYS_SRC_ACCEL, <0.0,0.0,-0.5>
+
+,PSYS_PART_START_COLOR, <1.0,1.0,1.0>
+
+,PSYS_PART_END_COLOR, <1.0,1.0,1.0>
+     
+,PSYS_PART_START_ALPHA,      st                
+,PSYS_PART_END_ALPHA,        st                
+,PSYS_PART_START_SCALE,<0.4,0.6,1.0>      
+,PSYS_PART_END_SCALE,  <0.4,0.6,1.0> 
+    
+,PSYS_SRC_ANGLE_BEGIN, 3*PI                 
+,PSYS_SRC_ANGLE_END, PI/2                 
+,PSYS_SRC_OMEGA, <0.0,0.0,0.0>
+,PSYS_SRC_PATTERN,PSYS_SRC_PATTERN_EXPLODE
+
+
+]);
+}
+
+integer gMenuPosition;
+list InventoryList;
+
+Menu()
+{
+    integer Last;
+    list Buttons;
+    list gNames = InventoryList;
+    integer All = llGetListLength(gNames);
+    if(gMenuPosition >= 9)   //This is NOT the first menu page
+    {
+        Buttons += "    <----";
+        if((All - gMenuPosition) > 11)  // This is not the last page
+        {
+            Buttons += "    ---->";
+        }
+        else    // This IS the last page
+        {
+            Last = TRUE;
+        }            
+    }    
+    else if (All > gMenuPosition+9) // This IS the first page
+    {
+        if((All - gMenuPosition) > 11)  // There are more pages to follow
+        {
+            Buttons += "    ---->";
+        }
+        else    // This IS the last page
+        {
+            Last = TRUE;
+        }            
+    }
+    else    // This is the only menu page
+    {
+        Last = TRUE;
+    }
+    if (All > 0)
+    {
+        integer b;
+        integer len = llGetListLength(Buttons);
+        // This bizarre test does the important work ......        
+        for(b = gMenuPosition + len + Last - 1 ; (len < 12)&&(b < All); ++b)
+        {
+            Buttons = Buttons + [llList2String(gNames,b)];
+            len = llGetListLength(Buttons);
+        }
+    }
+    // gLsn = llListen(-12345,"","","");    
+    // llSetTimerEvent(10.0);
+    llDialog(llGetOwner()," \n",Buttons, 6);
+}
+
+
+
+default
+{
+    
+    changed(integer change)
+    {
+        if (change & CHANGED_OWNER)
+            llResetScript();
+    }
+        
+    link_message(integer sender_num, integer num, string tex, key id)
+    {
+        
+        gMenuPosition = 0;
+        owner = llGetOwner();
+        key sol = (key)(owner);
+        InventoryList = [];
+        // llSay(0, "Num: "+num);
+        // llSay(0, "Owner = "+owner);
+        // llSay(0, "sol = "+sol);
+        // llSay(0, "id = "+id);
+        
+        if (num == 1 && id == sol)
+        {   
+            // list InventoryList;
+            integer count = llGetInventoryNumber(INVENTORY_TEXTURE);
+            string  ItemName;
+            while (count--)
+            {
+                ItemName = llGetInventoryName(INVENTORY_TEXTURE, count); 
+                InventoryList += ItemName;
+            }
+            //llDialog(owner, "Choose your Texture", InventoryList, 6);
+            Menu();
+        }
+    }
+    
+     state_entry()
+    {
+        llSetTimerEvent(30);
+        llListen(6, "", llGetOwner(), ""); 
+    }
+    
+    attach(key id)
+    {
+        // llSay(0,"Getting owner");
+        owner = llGetOwner();       
+    }
+
+    timer()
+    {
+        llParticleSystem([]);
+    }
+    
+    listen(integer channel, string name, key id, string message)
+    
+    {
+        if (id == owner)
+        {
+            if (~llSubStringIndex(message,"---->"))
+            {
+                gMenuPosition += 10;
+                Menu();
+            }
+            else if (~llSubStringIndex(message,"<----"))
+            {
+                gMenuPosition -= 10;
+                Menu();
+            }
+            else
+            {
+                //Do whatever the selected button directs..... your choice
+                MakeParticles(message);
+            }
+        }
+        
+    }
+    
+ 
+}
