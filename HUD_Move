@@ -1,0 +1,29 @@
+key user;
+default
+{
+    attach(key id)
+    {
+        if (id) 
+        {
+            user = id;
+        }
+    }
+    
+    changed(integer change)
+    {
+        if (change & CHANGED_OWNER)
+            llResetScript();
+    }
+    
+    touch_end(integer num_detected)
+    {
+        // llSay(0, user);
+        if (llDetectedKey(0) == user)
+        {
+            llSay (6, user+"move");
+        }else
+        {
+            llSay(0, "Não");
+        }
+    }
+}
