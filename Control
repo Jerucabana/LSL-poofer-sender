@@ -1,0 +1,47 @@
+key owner;
+
+default
+{
+    attach(key id)
+    {
+        owner = llGetOwner();
+    }
+    
+    changed(integer change)
+    {
+        if (change & CHANGED_OWNER)
+            llResetScript();
+    }
+    
+    state_entry()
+    {
+        llListen(6,"",NULL_KEY,"");
+        owner = llGetOwner();
+    }
+    
+    listen(integer channel, string name, key id, string message)
+    {
+        string ident = "";
+        string mes = "";
+        owner = llGetOwner();
+        ident = llGetSubString(message, 0,35);
+        mes = llGetSubString(message, 36,-1);
+ 
+        if(ident == owner)
+        {
+            if(llGetSubString(mes,0,3)=="poof")
+            {
+                string tex = llGetSubString(mes,5,6); 
+                llMessageLinked(-4,1,"",owner);
+                llResetScript();
+            }
+            if(llGetSubString(mes,0,3)=="move")
+            {
+                string tex = llGetSubString(message,5,40);
+                llMessageLinked(-4,2,"",owner);
+                llResetScript();
+            }
+        }
+    }
+
+}
